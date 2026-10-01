@@ -1,12 +1,8 @@
-// lib/supabase.ts - Version 1.3
+// lib/supabase.ts
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://zgrehehwcflpsjlxbzjy.supabase.co";
+// 正確的 Supabase 專案 Endpoint（中間為 cfl 單一 l）
+const SUPABASE_URL = "https://zgrehehwcflpsjlxbzjy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_W6ceai7NyX6mOgVBv9U7cw_Fc1m6ub";
 
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_W6ceai7NyX6mOgVBv9U7cw_Fc1m6ub";
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
