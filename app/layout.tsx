@@ -33,6 +33,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // 加入 Google Search Console 驗證碼
+  verification: {
+    google: "0rVjtyYMCWRNqXFj6pJ8oveUAbTFmnVqxrGj_gNbnEs",
+  },
 };
 
 export default function RootLayout({
