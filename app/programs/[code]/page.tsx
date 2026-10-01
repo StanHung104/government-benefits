@@ -1,10 +1,10 @@
 import ProgramDetailClient from "./ProgramDetailClient";
 import { supabase } from "@/lib/supabase";
 
+// 關鍵：必須具名匯出 generateStaticParams 以支援 output: 'export'
 export async function generateStaticParams() {
-  // 增加 null 防護，滿足 TypeScript 型別檢查
   if (!supabase) {
-    console.warn("⚠️ Supabase client 尚未初始化，跳過預先渲染");
+    console.warn("⚠️ Supabase client 未初始化，跳過預先渲染");
     return [];
   }
 
