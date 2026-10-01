@@ -1,15 +1,13 @@
-// scripts/ingest.mjs - Production Ingest Pipeline
+// scripts/ingest.mjs
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-// 1. 安全讀取 .env.local
+// 1. 讀取 .env.local
 function loadEnv() {
   const envPath = path.resolve(process.cwd(), ".env.local");
-  if (!fs.existsSync(envPath)) {
-    throw new Error("找不到 .env.local 檔案");
-  }
+  if (!fs.existsSync(envPath)) throw new Error("找不到 .env.local 檔案");
 
   const envContent = fs.readFileSync(envPath, "utf-8");
   for (const line of envContent.split("\n")) {
@@ -42,7 +40,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// 2. 原始待解析文字
+// 2. 原始政策文字
 const rawPolicyText = `
 【經濟部商業發展署】115年度商業服務業智慧減碳補助計畫
 為協助商業服務業因應淨零排放趨勢，經濟部商業發展署推動智慧減碳補助計畫。
@@ -54,22 +52,25 @@ const rawPolicyText = `
 
 async function run() {
   const prompt = `
-你是一位精通政府政策與補助案的資料架構師。請嚴格解析以下原始文字，並轉換為符合資料庫真實 Schema 的單一 JSON 物件。
+你是一位精通政府政策與補助案的資料架構師。請嚴格解析以下原始文字，並轉換為符合資料庫 Schema 的單一 JSON 物件。
 
 原始內容：
 """
 ${rawPolicyText}
 """
 
-必須遵守的 JSON 結構規範（欄位必須精確對應）：
+必須遵守的 JSON 結構規範：
 {
-  "program_code": "英數小寫短網址代碼，例如 esg-smart-reduction-2026",
+  "program_code": "moea-smart-carbon-reduction-2026",
   "name": "完整政策名稱",
   "short_name": "政策簡稱（10字以內）",
-  "category_code": "分類代碼，請從中選擇最貼近的: [housing, child, education, employment, elderly, business]",
+  "category_code": "business",
   "subcategory_code": null,
-  "summary": "包含政策宗旨、補助金額（如小型企業最高30萬、連鎖最高150萬）與核心資格的完整摘要（約80~150字）",
-  "provider_level": "主管層級，僅填 'CENTRAL' 或 'LOCAL'",
+  "summary": "政策宗旨摘要（50~100字）",
+  "amount_desc": "補助金額重點摘要，例如 '小型企業最高 30 萬元；中大型連鎖最高 150 萬元'",
+  "eligibility_summary": "條列式申請資格說明，例如 '1. 依法設立登記之公司、商業、有限合夥\\n2. 須提出具體減碳規劃與導入智慧節能設備方案'",
+  "official_url": "官方網站連結，若無則填 null",
+  "provider_level": "CENTRAL",
   "provider_agency": "主辦機關名稱（例如：經濟部商業發展署）",
   "provider_department": null,
   "status": "ACTIVE",
@@ -82,7 +83,7 @@ ${rawPolicyText}
   let parsedData;
 
   try {
-    console.log("🚀 [1/3] 正在呼叫 Gemini 模型 (gemini-flash-latest) 進行政策語意解析...");
+    console.log("🚀 [1/3] 正在呼叫 Gemini 模型 (gemini-flash-lite-latest) 解析政策...");
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${geminiApiKey}`;
 
     const res = await fetch(endpoint, {
@@ -95,7 +96,7 @@ ${rawPolicyText}
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`API 回傳錯誤 HTTP ${res.status}: ${errText}`);
+      throw new Error(`API HTTP ${res.status}: ${errText}`);
     }
 
     const resJson = await res.json();
@@ -103,14 +104,14 @@ ${rawPolicyText}
     text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
     parsedData = JSON.parse(text);
-    console.log("✅ [2/3] AI 結構化解析成功：\n", JSON.stringify(parsedData, null, 2));
+    console.log("✅ [2/3] AI 解析成功：\n", JSON.stringify(parsedData, null, 2));
   } catch (err) {
     console.error("❌ AI 解析失敗:", err.message);
     process.exit(1);
   }
 
-  // 3. 寫入 Supabase 資料庫 (欄位完全對齊 schema)
-  console.log("💾 [3/3] 正在透過 Service Role 安全寫入 Supabase...");
+  // 3. 寫入 Supabase 資料庫
+  console.log("💾 [3/3] 正在透過 Service Role 寫入 Supabase...");
   try {
     const payload = {
       program_code: parsedData.program_code,
@@ -119,6 +120,9 @@ ${rawPolicyText}
       category_code: parsedData.category_code,
       subcategory_code: parsedData.subcategory_code || null,
       summary: parsedData.summary,
+      amount_desc: parsedData.amount_desc || null,
+      eligibility_summary: parsedData.eligibility_summary || null,
+      official_url: parsedData.official_url || null,
       provider_level: parsedData.provider_level || "CENTRAL",
       provider_agency: parsedData.provider_agency || "經濟部",
       provider_department: parsedData.provider_department || null,
@@ -136,8 +140,6 @@ ${rawPolicyText}
     if (error) throw error;
 
     console.log("🎉 成功寫入 Supabase 資料庫！異動紀錄：", data);
-    console.log(`🔗 前端首頁查看：[https://government-benefits.pages.dev/](https://government-benefits.pages.dev/)`);
-    console.log(`🔗 內頁預覽網址：[https://government-benefits.pages.dev/programs/$](https://government-benefits.pages.dev/programs/$){parsedData.program_code}`);
   } catch (err) {
     console.error("❌ Supabase 資料庫寫入異常:", err.message);
     process.exit(1);

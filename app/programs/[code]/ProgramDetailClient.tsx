@@ -3,159 +3,119 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PROGRAMS as staticPrograms, Program } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 
+interface ProgramDetail {
+  id: string;
+  program_code: string;
+  name: string;
+  short_name: string;
+  category_code: string;
+  summary: string;
+  amount_desc: string | null;
+  eligibility_summary: string | null;
+  official_url: string | null;
+  provider_level: string;
+  provider_agency: string;
+}
+
 export default function ProgramDetailClient({ code }: { code: string }) {
-  // 1. 本地靜態清單尋找備援
-  const initialProgram = staticPrograms.find((p) => p.program_code === code) || null;
-  const [program, setProgram] = useState<Program | null>(initialProgram);
-  const [isLoading, setIsLoading] = useState(!initialProgram);
-  const [notFoundState, setNotFoundState] = useState(false);
+  const [program, setProgram] = useState<ProgramDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 2. 客戶端向 Supabase 動態撈取單筆詳情（確保新資料庫記錄不報 404）
   useEffect(() => {
-    async function fetchProgramDetail() {
-      if (!supabase) {
-        if (!initialProgram) setNotFoundState(true);
-        setIsLoading(false);
-        return;
-      }
+    async function fetchDetail() {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from("programs")
+        .select("*")
+        .eq("program_code", code)
+        .single();
 
-      try {
-        const { data, error } = await supabase
-          .from("programs")
-          .select("*")
-          .eq("program_code", code)
-          .single();
-
-        if (error || !data) {
-          if (!initialProgram) {
-            setNotFoundState(true);
-          }
-        } else {
-          setProgram(data as Program);
-        }
-      } catch (err) {
-        console.error("載入政策詳情異常:", err);
-        if (!initialProgram) setNotFoundState(true);
-      } finally {
-        setIsLoading(false);
+      if (!error && data) {
+        setProgram(data);
       }
+      setLoading(false);
     }
+    fetchDetail();
+  }, [code]);
 
-    fetchProgramDetail();
-  }, [code, initialProgram]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-slate-400 text-sm animate-pulse flex items-center gap-2">
-          <span>●</span> 正在載入政策資訊...
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <div className="p-12 text-center text-slate-500">資料載入中...</div>;
   }
 
-  if (notFoundState || !program) {
+  if (!program) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="text-center space-y-4 max-w-md bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-4xl">🔍</span>
-          <h1 className="text-xl font-bold text-slate-800">查無此補助方案</h1>
-          <p className="text-xs text-slate-500">
-            該方案可能尚未發布或連結代碼無效。
-          </p>
-          <Link
-            href="/"
-            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
-          >
-            返回補助列表
-          </Link>
-        </div>
+      <div className="p-12 text-center text-slate-600">
+        <p>查無此補助方案資料。</p>
+        <Link href="/" className="mt-4 inline-block text-blue-600 underline">返回列表</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      {/* 頂部導覽 */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-xs font-semibold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition"
-          >
-            ← 返回列表
-          </Link>
-          <span className="text-xs text-slate-400">{program.program_code}</span>
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-between items-center text-sm text-slate-500">
+          <Link href="/" className="hover:text-slate-800">← 返回列表</Link>
+          <span>{program.program_code}</span>
         </div>
-      </header>
 
-      {/* 核心內容 */}
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-              {program.category_name}
-            </span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              {program.provider_level === "CENTRAL" ? "中央主管機關" : "地方政府"}
-            </span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
+        {/* 主標題與摘要卡片 */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-4">
+          <span className="inline-block px-2.5 py-1 text-xs font-medium rounded bg-slate-100 text-slate-700">
+            {program.provider_level === "CENTRAL" ? "中央主管機關" : "地方主管機關"}
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
             {program.name}
           </h1>
-
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          <p className="text-slate-600 text-base leading-relaxed">
             {program.summary}
           </p>
 
-          <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-200/80 text-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs font-medium">補助金額與額度</span>
-            <span className="font-bold text-base sm:text-lg">{program.amount_desc}</span>
+          {/* 金額區塊 */}
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-900">
+            <span className="font-semibold block text-sm mb-1">補助金額與額度</span>
+            <p className="text-base font-bold">{program.amount_desc || "依主辦機關公告審查核定"}</p>
           </div>
-        </section>
+        </div>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-3">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span>📋</span> 申請資格概述
+        {/* 資格與來源卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              📋 申請資格概述
             </h2>
-            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+            <div className="text-slate-600 text-sm whitespace-pre-line leading-relaxed">
               {program.eligibility_summary || "依主辦機關最新公告資格為準。"}
-            </p>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span>🏛️</span> 主辦與來源
-              </h2>
-              <div className="text-xs text-slate-500 space-y-1">
-                <p>資料等級：{program.provider_level === "CENTRAL" ? "中央主管政策" : "地方政府補助"}</p>
-                <p>識別碼：<code className="text-slate-600 bg-slate-100 px-1 py-0.5 rounded">{program.id || program.program_code}</code></p>
-              </div>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              🏛️ 主辦與來源
+            </h2>
+            <div className="text-sm text-slate-600 space-y-1">
+              <p>主辦單位：{program.provider_agency || "未提供"}</p>
+              <p className="text-xs text-slate-400">識別碼：{program.id}</p>
             </div>
-
             {program.official_url ? (
               <a
                 href={program.official_url}
                 target="_blank"
-                rel="noopener noreferrer"
-                className="w-full text-center py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition"
+                rel="noreferrer"
+                className="block w-full text-center py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
-                前往官方申請網站 ↗
+                前往官方網站申請
               </a>
             ) : (
-              <span className="text-center py-2.5 px-4 bg-slate-100 text-slate-400 rounded-xl text-xs font-medium">
+              <button disabled className="w-full py-2.5 px-4 bg-slate-100 text-slate-400 rounded-lg text-sm cursor-not-allowed">
                 暫無外部直接連結
-              </span>
+              </button>
             )}
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
