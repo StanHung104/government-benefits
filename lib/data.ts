@@ -23,6 +23,7 @@ export interface Program {
   status?: string;
   is_featured?: boolean;
   amount_desc: string;
+  eligibility_summary?: string;
   target: string;
   apply_period: string;
   apply_method: string;
