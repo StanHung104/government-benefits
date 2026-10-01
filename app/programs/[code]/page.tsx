@@ -2,6 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PROGRAMS, Program } from "@/lib/data";
 
+// 讓 Next.js 在靜態導出時知道有哪些頁面要預先產出 HTML
+export function generateStaticParams() {
+  return PROGRAMS.map((item) => ({
+    code: item.program_code,
+  }));
+}
+
 export default async function ProgramDetailPage({
   params,
 }: {
