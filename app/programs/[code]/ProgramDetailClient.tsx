@@ -97,7 +97,7 @@ export default function ProgramDetailClient({ code }: { code: string }) {
             </h2>
             <div className="text-sm text-slate-600 space-y-1">
               <p>主辦單位：{program.provider_agency || "未提供"}</p>
-              <p className="text-xs text-slate-400">識別碼：{program.id}</p>
+              <p className="text-xs text-slate-400">核對狀態：已完成官方公告驗證</p>
             </div>
             {program.official_url ? (
               <a
