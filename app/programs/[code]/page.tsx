@@ -1,16 +1,28 @@
-// app/programs/[code]/page.tsx
-import { PROGRAMS as staticPrograms } from "@/lib/data";
 import ProgramDetailClient from "./ProgramDetailClient";
+import { supabase } from "@/lib/supabase";
 
-// 1. 提供靜態匯出所需的路由清單 (Server Component 專屬)
-export function generateStaticParams() {
-  return staticPrograms.map((item) => ({
-    code: item.program_code,
+export async function generateStaticParams() {
+  // 增加 null 防護，滿足 TypeScript 型別檢查
+  if (!supabase) {
+    console.warn("⚠️ Supabase client 尚未初始化，跳過預先渲染");
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("programs")
+    .select("program_code");
+
+  if (error || !data) {
+    console.error("Build 階段讀取 Supabase 失敗:", error);
+    return [];
+  }
+
+  return data.map((p) => ({
+    code: p.program_code,
   }));
 }
 
-// 2. 頁面入口：解包路由參數並交由 Client 元件動態查詢與渲染
-export default async function ProgramDetailPage({
+export default async function ProgramPage({
   params,
 }: {
   params: Promise<{ code: string }>;
