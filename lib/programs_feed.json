@@ -1,0 +1,42 @@
+[
+  {
+    "program_code": "youth-cross-region-employment-subsidy",
+    "name": "青年跨域就業津貼",
+    "short_name": "青年跨域就業補助",
+    "category_code": "employment",
+    "category_name": "就業與勞工",
+    "summary": "針對18至29歲初次尋職未就業青年，經公立就服機構推介至離家30公里以上全時工作滿30日，提供交通補助最高每月3千、租屋補助最高每月5千及搬遷補助最高3萬元。",
+    "provider_agency": "勞動部勞動力發展署",
+    "provider_level": "CENTRAL",
+    "amount_desc": "異地就業交通補助金：每月最高3,000元，最長12個月；搬遷補助金：最高30,000元核實發給；租屋補助金：每月最高5,000元，最長12個月。",
+    "target": "18歲至29歲之初次尋職未就業青年，經公立就業服務機構推介，受僱於離日常居住處所30公里以上之全時工作，且連續受僱滿30日以上者。",
+    "apply_period": "常態受理（受僱滿30日之日起90日內提出申請）",
+    "apply_method": "親洽各公立就業服務機構窗口辦理，或透過台灣就業通網站線上申辦。",
+    "documents": [
+      "身分證明文件影本",
+      "租賃契約影本（申請租屋補助者）",
+      "在職及薪資證明文件",
+      "搬遷費用收據正本（申請搬遷補助者）",
+      "居住地證明文件（如水電費帳單或戶籍謄本）"
+    ],
+    "official_url": "https://www.taiwanjobs.gov.tw/",
+    "recommended_products": [
+      {
+        "id": "prod-101",
+        "title": "防潑水大容量商務筆電後背包（異地通勤必備）",
+        "price": 1280,
+        "platform": "momo購物網",
+        "tag": "求職首選",
+        "affiliate_url": "#"
+      },
+      {
+        "id": "prod-102",
+        "title": "租屋免打孔無痕收納置物架超值組",
+        "price": 699,
+        "platform": "蝦皮商城",
+        "tag": "租屋熱銷",
+        "affiliate_url": "#"
+      }
+    ]
+  }
+]
