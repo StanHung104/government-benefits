@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://government-benefits.pages.dev/sitemap.xml
